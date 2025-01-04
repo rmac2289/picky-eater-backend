@@ -1,12 +1,23 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
 
+from app.exceptions import NotFoundException, UserIdMismatchException
 from app.security import create_access_token, get_current_user, get_password_hash, verify_password
 from . import models, schemas, database
 
 app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
@@ -20,7 +31,7 @@ def create_food_log(food_log: schemas.FoodLogCreate,
                    db: Session = Depends(database.get_db), 
                    current_user: models.User = Depends(get_current_user)):
     if not current_user.id == food_log.user_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise UserIdMismatchException
     db_food_log = models.FoodLog(**food_log.model_dump())
     db.add(db_food_log)
     db.commit()
@@ -36,7 +47,7 @@ def delete_food_log(food_log_id: int,
         models.FoodLog.user_id == current_user.id
     ).first()
     if not food_log:
-        raise HTTPException(status_code=404, detail="Food log not found")
+        raise NotFoundException
     db.delete(food_log)
     db.commit()
     return {"ok": True}
@@ -45,7 +56,7 @@ def delete_food_log(food_log_id: int,
 def create_safe_food(safe_food: schemas.SafeFoodCreate, db: Session = Depends(database.get_db), 
                      current_user: models.User = Depends(get_current_user)):
    if not current_user.id == safe_food.user_id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise UserIdMismatchException
    db_safe_food = models.SafeFood(**safe_food.model_dump())
    db.add(db_safe_food)
    db.commit()
@@ -65,7 +76,7 @@ def delete_food_log(safe_food_id: int,
         models.SafeFood.user_id == current_user.id
     ).first()
     if not safe_food:
-        raise HTTPException(status_code=404, detail="Safe food not found")
+        raise NotFoundException
     db.delete(safe_food)
     db.commit()
     return {"ok": True}
