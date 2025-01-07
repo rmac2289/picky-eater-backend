@@ -10,7 +10,7 @@ from .database import get_db
 from sqlalchemy.orm import Session
 from typing import Optional
 
-SECRET_KEY = os.getenv('DEV_JWT_KEY') # Store this in .env
+SECRET_KEY = os.getenv('DEV_JWT_KEY')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
